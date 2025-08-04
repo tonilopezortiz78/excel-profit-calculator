@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { ExcelUpload } from '@/components/excel-upload'
 import { DataTable } from '@/components/data-table'
 import { ThemeToggle } from '@/components/theme-toggle'
-import { CalculationSummary } from '@/components/calculation-summary'
+import { ProfitCalculator } from '@/components/profit-calculator'
 import { TableRow } from '@/types'
 
 export default function Home() {
@@ -70,7 +70,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="space-y-4">
-            <CalculationSummary 
+            <ProfitCalculator 
               data={tableData} 
               selectedRows={selectedRows} 
             />
