@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useMemo } from 'react'
 import {
   Table,
   TableBody,
@@ -11,7 +12,15 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { TableRow as TableRowType } from '@/types'
+import { ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react'
 
 interface DataTableProps {
   data: TableRowType[]
@@ -22,6 +31,8 @@ interface DataTableProps {
 }
 
 export function DataTable({ data, headers, fileName, selectedRows, onRowSelectionChange }: DataTableProps) {
+  const [sortBy, setSortBy] = useState<string>('')
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
   const formatCellValue = (value: string | number | null | undefined, header: string) => {
     if (value === null || value === undefined || value === '') return '-'
     
@@ -92,17 +103,82 @@ export function DataTable({ data, headers, fileName, selectedRows, onRowSelectio
     }
   }
 
+  // Sort the data while maintaining original indices for selection
+  const sortedDataWithIndices = useMemo(() => {
+    const dataWithIndices = data.map((row, originalIndex) => ({ row, originalIndex }))
+    
+    if (!sortBy) return dataWithIndices
+
+    return dataWithIndices.sort((a, b) => {
+      let aValue = a.row[sortBy]
+      let bValue = b.row[sortBy]
+
+      // Handle different data types
+      if (sortBy.toLowerCase().includes('price') || sortBy.toLowerCase().includes('amount') || sortBy.toLowerCase().includes('total') || sortBy.toLowerCase().includes('fee')) {
+        aValue = parseFloat(String(aValue || 0))
+        bValue = parseFloat(String(bValue || 0))
+      } else if (sortBy.toLowerCase().includes('time')) {
+        aValue = new Date(String(aValue || '')).getTime()
+        bValue = new Date(String(bValue || '')).getTime()
+      } else {
+        aValue = String(aValue || '').toLowerCase()
+        bValue = String(bValue || '').toLowerCase()
+      }
+
+      if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1
+      if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1
+      return 0
+    })
+  }, [data, sortBy, sortDirection])
+
+  const sortedData = sortedDataWithIndices.map(item => item.row)
+  const originalIndices = sortedDataWithIndices.map(item => item.originalIndex)
+
   const allSelected = selectedRows.length === data.length && data.length > 0
   const someSelected = selectedRows.length > 0 && selectedRows.length < data.length
+
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortBy(column)
+      setSortDirection('asc')
+    }
+  }
+
+  const getSortIcon = (column: string) => {
+    if (sortBy !== column) return <ArrowUpDown className="h-3 w-3 opacity-50" />
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="h-3 w-3 text-primary" />
+      : <ArrowDown className="h-3 w-3 text-primary" />
+  }
 
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Trading Data</CardTitle>
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary">{fileName}</Badge>
-            <Badge variant="outline">{data.length} rows</Badge>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Sort by:</span>
+              <Select value={sortBy} onValueChange={(value) => handleSort(value)}>
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Select column" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Default order</SelectItem>
+                  {headers.map((header) => (
+                    <SelectItem key={header} value={header}>
+                      {header}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary">{fileName}</Badge>
+              <Badge variant="outline">{data.length} rows</Badge>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -126,37 +202,44 @@ export function DataTable({ data, headers, fileName, selectedRows, onRowSelectio
                   {headers.map((header, index) => (
                     <TableHead 
                       key={index} 
-                      className="px-2 py-2 text-xs font-semibold border-r border-muted/20 bg-muted/30 sticky top-0 z-10"
+                      className="px-2 py-2 text-xs font-semibold border-r border-muted/20 bg-muted/30 sticky top-0 z-10 cursor-pointer hover:bg-muted/40 transition-colors"
+                      onClick={() => handleSort(header)}
                     >
-                      {header}
+                      <div className="flex items-center gap-1">
+                        {header}
+                        {getSortIcon(header)}
+                      </div>
                     </TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.map((row, rowIndex) => (
-                  <TableRow 
-                    key={rowIndex}
-                    className={`hover:bg-muted/20 transition-colors ${
-                      selectedRows.includes(rowIndex) ? 'bg-primary/5 border-primary/20' : ''
-                    }`}
-                  >
-                    <TableCell className="w-12 px-2 py-1 border-r border-muted/20">
-                      <Checkbox
-                        checked={selectedRows.includes(rowIndex)}
-                        onCheckedChange={(checked) => handleRowSelect(rowIndex, !!checked)}
-                      />
-                    </TableCell>
-                    {headers.map((header, cellIndex) => (
-                      <TableCell 
-                        key={cellIndex}
-                        className={getCellClassName(row[header], header)}
-                      >
-                        {formatCellValue(row[header], header)}
+                {sortedData.map((row, sortedIndex) => {
+                  const originalIndex = originalIndices[sortedIndex]
+                  return (
+                    <TableRow 
+                      key={originalIndex}
+                      className={`hover:bg-muted/20 transition-colors ${
+                        selectedRows.includes(originalIndex) ? 'bg-primary/5 border-primary/20' : ''
+                      }`}
+                    >
+                      <TableCell className="w-12 px-2 py-1 border-r border-muted/20">
+                        <Checkbox
+                          checked={selectedRows.includes(originalIndex)}
+                          onCheckedChange={(checked) => handleRowSelect(originalIndex, !!checked)}
+                        />
                       </TableCell>
-                    ))}
-                  </TableRow>
-                ))}
+                      {headers.map((header, cellIndex) => (
+                        <TableCell 
+                          key={cellIndex}
+                          className={getCellClassName(row[header], header)}
+                        >
+                          {formatCellValue(row[header], header)}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           </div>
