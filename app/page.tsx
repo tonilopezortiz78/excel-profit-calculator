@@ -32,9 +32,9 @@ export default function Home() {
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">Excel Table Viewer</h1>
+            <h1 className="text-2xl font-bold">Excel Profit Calculator</h1>
             <p className="text-sm text-muted-foreground">
-              Upload your Excel files to view them in a responsive table
+              Upload your trading data and calculate potential profits with real-time analysis
             </p>
           </div>
           <div className="flex items-center gap-4">
@@ -59,12 +59,12 @@ export default function Home() {
             <div className="mt-8 text-center">
               <h2 className="text-lg font-semibold mb-2">Supported Features</h2>
               <ul className="text-sm text-muted-foreground space-y-1">
-                <li>✅ Excel files (.xlsx, .xls)</li>
-                <li>✅ CSV files (.csv)</li>
-                <li>✅ Responsive table design</li>
-                <li>✅ Dark/Light theme support</li>
-                <li>✅ Trading data formatting</li>
-                <li>✅ Drag & drop file upload</li>
+                <li>💰 Real-time profit calculations</li>
+                <li>📊 Input target sell price for analysis</li>
+                <li>📈 Percentage and USDT profit display</li>
+                <li>🎯 Break-even price analysis</li>
+                <li>✅ Excel/CSV file support</li>
+                <li>🌙 Dark/Light theme support</li>
               </ul>
             </div>
           </div>
