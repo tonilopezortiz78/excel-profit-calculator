@@ -33,10 +33,10 @@ interface DataTableProps {
 }
 
 export function DataTable({ data, headers, fileName, selectedRows, onRowSelectionChange }: DataTableProps) {
-  const [sortBy, setSortBy] = useState<string>('')
+  const [sortBy, setSortBy] = useState<string>('default')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc')
-  const [filterPair, setFilterPair] = useState<string>('')
-  const [filterSide, setFilterSide] = useState<string>('')
+  const [filterPair, setFilterPair] = useState<string>('all')
+  const [filterSide, setFilterSide] = useState<string>('all')
   const [searchText, setSearchText] = useState<string>('')
   const formatCellValue = (value: string | number | null | undefined, header: string) => {
     if (value === null || value === undefined || value === '') return '-'
@@ -124,13 +124,13 @@ export function DataTable({ data, headers, fileName, selectedRows, onRowSelectio
     let dataWithIndices = data.map((row, originalIndex) => ({ row, originalIndex }))
     
     // Apply filters
-    if (filterPair) {
+    if (filterPair && filterPair !== 'all') {
       dataWithIndices = dataWithIndices.filter(item => 
         String(item.row.Pairs || '').toLowerCase().includes(filterPair.toLowerCase())
       )
     }
     
-    if (filterSide) {
+    if (filterSide && filterSide !== 'all') {
       dataWithIndices = dataWithIndices.filter(item => 
         String(item.row.Side || '').toLowerCase() === filterSide.toLowerCase()
       )
@@ -145,7 +145,7 @@ export function DataTable({ data, headers, fileName, selectedRows, onRowSelectio
     }
     
     // Apply sorting
-    if (!sortBy) return dataWithIndices
+    if (!sortBy || sortBy === 'default') return dataWithIndices
 
     return dataWithIndices.sort((a, b) => {
       let aValue = a.row[sortBy]
@@ -176,7 +176,10 @@ export function DataTable({ data, headers, fileName, selectedRows, onRowSelectio
   const someSelected = selectedRows.length > 0 && selectedRows.length < data.length
 
   const handleSort = (column: string) => {
-    if (sortBy === column) {
+    if (column === 'default') {
+      setSortBy('default')
+      setSortDirection('asc')
+    } else if (sortBy === column) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
       setSortBy(column)
@@ -192,12 +195,12 @@ export function DataTable({ data, headers, fileName, selectedRows, onRowSelectio
   }
 
   const clearAllFilters = () => {
-    setFilterPair('')
-    setFilterSide('')
+    setFilterPair('all')
+    setFilterSide('all')
     setSearchText('')
   }
 
-  const hasActiveFilters = filterPair || filterSide || searchText
+  const hasActiveFilters = (filterPair !== 'all') || (filterSide !== 'all') || searchText
 
   return (
     <Card>
@@ -232,7 +235,7 @@ export function DataTable({ data, headers, fileName, selectedRows, onRowSelectio
                   <SelectValue placeholder="All pairs" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All pairs</SelectItem>
+                  <SelectItem value="all">All pairs</SelectItem>
                   {uniquePairs.map((pair) => (
                     <SelectItem key={pair} value={pair}>
                       {pair}
@@ -252,7 +255,7 @@ export function DataTable({ data, headers, fileName, selectedRows, onRowSelectio
                   <SelectValue placeholder="All" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All</SelectItem>
+                  <SelectItem value="all">All</SelectItem>
                   {uniqueSides.map((side) => (
                     <SelectItem key={side} value={side}>
                       {side}
@@ -266,12 +269,12 @@ export function DataTable({ data, headers, fileName, selectedRows, onRowSelectio
           {/* Sort Control */}
           <div className="flex items-center gap-2">
             <span className="text-sm text-muted-foreground">Sort:</span>
-            <Select value={sortBy} onValueChange={(value) => handleSort(value)}>
-              <SelectTrigger className="w-36">
-                <SelectValue placeholder="Default order" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="">Default order</SelectItem>
+                          <Select value={sortBy} onValueChange={(value) => handleSort(value)}>
+                <SelectTrigger className="w-36">
+                  <SelectValue placeholder="Default order" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="default">Default order</SelectItem>
                 {headers.map((header) => (
                   <SelectItem key={header} value={header}>
                     {header}
